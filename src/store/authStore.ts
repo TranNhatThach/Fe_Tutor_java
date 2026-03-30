@@ -1,9 +1,8 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { getCookie, setCookie, deleteCookie } from '../utils/cookie';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { getCookie, setCookie, deleteCookie } from "../utils/cookie";
 
-
-export type Role = 'HOC_VIEN' | 'GIA_SU';
+export type Role = "HOC_VIEN" | "GIA_SU" | "ADMIN";
 
 interface User {
   id: string;
@@ -25,9 +24,9 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
-      token: getCookie('accessToken') || null,
+      token: getCookie("accessToken") || null,
       setAuth: (user, token) => {
-        setCookie('accessToken', token, 1);
+        setCookie("accessToken", token, 1);
         set({ user, token });
       },
       updateUser: (partial) => {
@@ -36,13 +35,12 @@ export const useAuthStore = create<AuthState>()(
         }));
       },
       logout: () => {
-        deleteCookie('accessToken');
+        deleteCookie("accessToken");
         set({ user: null, token: null });
       },
     }),
     {
-      name: 'auth-storage',
-    }
-  )
+      name: "auth-storage",
+    },
+  ),
 );
-

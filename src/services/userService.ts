@@ -11,7 +11,19 @@ const userService = {
    * Fetch all users with optional filtering
    */
   getUsers: async (params?: UserQueryParams): Promise<User[]> => {
-    return apiClient('/users', { params });
+    const data = await apiClient('/users/show', { params });
+    
+    // Map backend TaiKhoan entity to frontend User interface
+    return Array.isArray(data) ? data.map((item: any) => ({
+      id: item.maTaiKhoan,
+      username: item.email || '',
+      fullName: item.hoTen || 'Chưa cập nhật',
+      email: item.email,
+      role: item.vaiTro || 'USER',
+      phoneNumber: item.soDienThoai,
+      isActive: item.trangThai === 'HOAT_DONG',
+      createdAt: item.ngayTao,
+    })) : [];
   },
 
 

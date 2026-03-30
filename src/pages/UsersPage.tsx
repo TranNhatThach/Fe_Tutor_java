@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 import { User } from '../types/user';
 import userService from '../services/userService';
-import { Loader2, AlertCircle, UserPlus, Search, RefreshCw, Trash2, Edit } from 'lucide-react';
+import { Loader2, AlertCircle, UserPlus, Search, RefreshCw, Trash2, Edit, LogOut } from 'lucide-react';
 
 const UsersPage: React.FC = () => {
   // 1. State Management
@@ -9,13 +11,17 @@ const UsersPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [roleFilter, setRoleFilter] = useState<string>('');
+  
+  const navigate = useNavigate();
+  const logout = useAuthStore((state) => state.logout);
 
   // 2. Fetch Data Function
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await userService.getUsers({ search: searchQuery });
+      const data = await userService.getUsers();
       setUsers(data);
     } catch (err: any) {
       console.error('Failed to fetch users:', err);
@@ -24,7 +30,20 @@ const UsersPage: React.FC = () => {
 
       setLoading(false);
     }
-  }, [searchQuery]);
+  }, []);
+
+  // Filtered Users logic
+  const filteredUsers = users.filter(user => {
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = 
+      (user.fullName && user.fullName.toLowerCase().includes(searchLower)) ||
+      (user.email && user.email.toLowerCase().includes(searchLower)) ||
+      (user.username && user.username.toLowerCase().includes(searchLower));
+    
+    const matchesRole = roleFilter ? user.role === roleFilter : true;
+    
+    return matchesSearch && matchesRole;
+  });
 
   // 3. Lifecycle Hooks
   useEffect(() => {
@@ -33,6 +52,23 @@ const UsersPage: React.FC = () => {
 
   // 4. UI Handlers
   const handleRefresh = () => fetchUsers();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const handleDelete = async (id: number | string) => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa người dùng này không? Hành động này không thể hoàn tác.')) {
+      try {
+        await userService.deleteUser(id);
+        setUsers(users.filter(u => u.id !== id));
+      } catch (err: any) {
+        console.error('Failed to delete user:', err);
+        alert(err.message || 'Xóa người dùng thất bại. Vui lòng thử lại.');
+      }
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -55,7 +91,17 @@ const UsersPage: React.FC = () => {
           </button>
           <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm transition-all duration-200 active:scale-95">
             <UserPlus className="w-5 h-5" />
-            <span>Thêm Mới</span>
+            <span className="hidden sm:inline">Thêm Mới</span>
+          </button>
+          
+          <div className="h-8 w-px bg-gray-200 mx-1"></div>
+          
+          <button 
+            onClick={handleLogout}
+            className="bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm transition-all duration-200 active:scale-95 border border-red-200"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="hidden sm:inline">Đăng Xuất</span>
           </button>
         </div>
       </div>
@@ -72,7 +118,11 @@ const UsersPage: React.FC = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <select className="w-full md:w-48 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+        <select 
+          className="w-full md:w-48 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+        >
           <option value="">Tất cả vai trò</option>
           <option value="ADMIN">Admin</option>
           <option value="GIA_SU">Gia sư</option>
@@ -82,7 +132,7 @@ const UsersPage: React.FC = () => {
 
       {/* Main Content (Loading/Error/Success States) */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden min-h-[400px]">
-        {loading && users.length === 0 ? (
+        {loading ? (
           <div className="flex flex-col items-center justify-center h-[400px]">
             <Loader2 className="w-10 h-10 text-indigo-500 animate-spin mb-4" />
             <p className="text-gray-500 font-medium italic">Đang tải dữ liệu từ API...</p>
@@ -111,7 +161,7 @@ const UsersPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {users.map((user) => (
+                {filteredUsers.map((user) => (
                   <tr key={user.id} className="hover:bg-blue-50/30 transition-colors duration-150">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -145,7 +195,11 @@ const UsersPage: React.FC = () => {
                         <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors">
                           <Edit className="w-4 h-4" />
                         </button>
-                        <button className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors">
+                        <button 
+                          onClick={() => handleDelete(user.id)}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                          title="Xóa người dùng"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -155,7 +209,7 @@ const UsersPage: React.FC = () => {
               </tbody>
             </table>
             
-            {users.length === 0 && !loading && (
+            {filteredUsers.length === 0 && !loading && (
               <div className="text-center py-12 text-gray-500 italic">
                 Không tìm thấy người dùng nào phù hợp.
               </div>
@@ -166,7 +220,7 @@ const UsersPage: React.FC = () => {
 
       <div className="mt-6 flex justify-between items-center text-sm text-gray-500 bg-gray-50 p-4 rounded-lg">
         <div>
-          Hiển thị <strong>{users.length}</strong> người dùng
+          Hiển thị <strong>{filteredUsers.length}</strong> người dùng
         </div>
         <div className="flex gap-2">
           <span>Base URL (API):</span>
