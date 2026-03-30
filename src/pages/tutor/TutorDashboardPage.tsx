@@ -1,18 +1,94 @@
 import { useAuthStore } from '../../store/authStore';
 import { useTutor } from '../../hooks/useTutor';
-import { Briefcase, Clock, Users, DollarSign, ArrowRight, TrendingUp, Mail, Loader2 } from 'lucide-react';
+import { useShared } from '../../hooks/useShared';
+import { Briefcase, Clock, Users, DollarSign, ArrowRight, BookOpen, Calendar, Mail, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+
+// Helper tìm ngày học tiếp theo
+function getNextSession(lichHoc?: string): { date: Date; label: string; daysRemaining: number } | null {
+  if (!lichHoc) return null;
+  const l = lichHoc.toLowerCase();
+  const dayMatch = l.match(/thứ\s*(\d)|t(\d)/g);
+  const isWeekend = l.includes('cn') || l.includes('chủ nhật');
+  
+  if (!dayMatch && !isWeekend) return null;
+  
+  const scheduleDays: number[] = [];
+  if (dayMatch) {
+    dayMatch.forEach(m => {
+      const num = parseInt(m.match(/\d/)?.[0] || '0');
+      if (num >= 2 && num <= 7) scheduleDays.push(num);
+    });
+  }
+  if (isWeekend) scheduleDays.push(1); // 1 = Sunday in our logic below
+
+  if (scheduleDays.length === 0) return null;
+
+  const today = new Date();
+  const currentJsDay = today.getDay(); // 0 is Sunday
+  const currentSysDay = currentJsDay === 0 ? 1 : currentJsDay + 1; // 1: Sun, 2: Mon, ... 7: Sat
+
+  let minDiff = 7;
+  scheduleDays.forEach(d => {
+    let diff = d - currentSysDay;
+    if (diff < 0) diff += 7;
+    if (diff < minDiff) minDiff = diff;
+  });
+
+  const nextDate = new Date(today);
+  nextDate.setDate(today.getDate() + minDiff);
+
+  const timeMatch = l.match(/(\d{1,2}(?::\d{2})?\s*(?:h|g)(?:iờ)?\s*(?:sáng|chiều|tối)?)/);
+  const timeLabel = timeMatch ? timeMatch[1].trim() : '';
+
+  return { date: nextDate, label: timeLabel, daysRemaining: minDiff };
+}
 
 export function TutorDashboardPage() {
   const { user } = useAuthStore();
-  const { getJobList } = useTutor();
-  const { data: jobs, isLoading } = getJobList();
+  const { getJobList, getInvitations } = useTutor();
+  const { getMyClasses } = useShared();
+  
+  const { data: jobs, isLoading: jobsLoading } = getJobList();
+  const { data: invitations } = getInvitations(user?.userId?.toString() || user?.id?.toString() || '');
+  const { data: classes } = getMyClasses();
+
+  let activeClasses = 0;
+  let hoursTaught = 0;
+  let estimatedIncome = 0;
+  const upcoming: any[] = [];
+
+  classes?.forEach(cls => {
+    if (cls.trangThai !== 'HOAN_THANH') activeClasses++;
+    
+    const doneSessions = cls.tongSoBuoi != null ? (cls.tongSoBuoi - (cls.soBuoiConLai ?? cls.tongSoBuoi)) : 0;
+    hoursTaught += (doneSessions * 2);
+    
+    if (cls.trangThai === 'DANG_HOC' || cls.trangThai === 'HOAN_THANH') {
+       estimatedIncome += (cls.hocPhiThoaThuan || 0);
+    }
+
+    if (cls.trangThai !== 'HOAN_THANH' && cls.lichHoc) {
+      const next = getNextSession(cls.lichHoc);
+      if (next) {
+        upcoming.push({ ...next, cls });
+      }
+    }
+  });
+
+  upcoming.sort((a, b) => a.daysRemaining - b.daysRemaining);
+  const nextClasses = upcoming.slice(0, 3);
+
+  const newInvitations = (invitations as any[])?.filter(inv => {
+    const st = inv.trangThai?.toUpperCase() || '';
+    return !st.includes('DONG Y') && !st.includes('ĐỒNG Ý') && !st.includes('TU CHOI') && !st.includes('TỪ CHỐI');
+  }).length || 0;
 
   const stats = [
-    { label: 'Lớp đang dạy', value: '0', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { label: 'Giờ đã dạy', value: '0h', icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'Thu nhập tháng', value: '0', icon: DollarSign, color: 'text-amber-600', bg: 'bg-amber-50' },
-    { label: 'Lời mời mới', value: '0', icon: Mail, color: 'text-purple-600', bg: 'bg-purple-50' },
+    { label: 'Lớp đang dạy', value: activeClasses.toString(), icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'Giờ đã dạy', value: `${hoursTaught}h`, icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'Thu nhập dự kiến', value: estimatedIncome >= 1000000 ? `${(estimatedIncome / 1000000).toFixed(1)}M` : `${(estimatedIncome / 1000)}k`, icon: DollarSign, color: 'text-amber-600', bg: 'bg-amber-50' },
+    { label: 'Lời mời mới', value: newInvitations.toString(), icon: Mail, color: 'text-purple-600', bg: 'bg-purple-50' },
   ];
 
   // Map real jobs to the dashboard format
@@ -68,7 +144,7 @@ export function TutorDashboardPage() {
           </div>
           
           <div className="space-y-4">
-            {isLoading ? (
+            {jobsLoading ? (
               <div className="flex items-center justify-center py-12 bg-white rounded-[2rem] border border-slate-100 shadow-sm">
                 <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
               </div>
@@ -99,28 +175,43 @@ export function TutorDashboardPage() {
 
         </div>
 
-        {/* Performance / Tips */}
+        {/* Lịch học tiếp theo */}
         <div className="space-y-6">
           <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-emerald-600" /> Hiệu suất dạy học
+            <Calendar className="w-5 h-5 text-emerald-600" /> Lịch dạy sắp tới
           </h2>
-          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-slate-500">Độ hài lòng</span>
-              <span className="text-sm font-black text-emerald-600">98%</span>
-            </div>
-            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-              <div className="bg-emerald-500 h-full w-[98%]"></div>
-            </div>
-            <p className="text-xs text-slate-500 leading-relaxed font-medium">
-              Bạn đang làm rất tốt! Hãy tiếp tục duy trì phong độ để được ưu tiên hiển thị trên trang tìm kiếm.
-            </p>
-            <div className="pt-4 border-t border-slate-50">
+          <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-4">
+            {nextClasses.length > 0 ? (
+              nextClasses.map((item, idx) => (
+                <div key={idx} className="flex gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 items-start">
+                  <div className="w-12 h-12 bg-emerald-100 rounded-xl flex flex-col items-center justify-center shrink-0">
+                    <span className="text-[10px] font-black text-emerald-600 uppercase leading-none mt-0.5">
+                      {item.daysRemaining === 0 ? 'HÔM NAY' : item.daysRemaining === 1 ? 'NGÀY MAI' : `+${item.daysRemaining} NGÀY`}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-slate-800 truncate">{item.cls.tenMonHoc || 'Môn học'}</p>
+                    <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
+                      <Clock className="w-3 h-3" /> {item.label || item.cls.lichHoc}
+                    </p>
+                    <p className="text-xs font-medium text-emerald-600 mt-1.5 line-clamp-1">
+                      Học viên: {item.cls.tenHocVien}
+                    </p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <BookOpen className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+                <p className="text-sm text-slate-500 font-medium">Chưa có lịch dạy nào sắp tới</p>
+              </div>
+            )}
+            <div className="pt-2">
               <Link 
-                to="/tutor/profile" 
-                className="flex items-center justify-center gap-2 w-full bg-slate-50 text-slate-700 py-3 rounded-xl font-bold text-sm hover:bg-emerald-50 hover:text-emerald-700 transition-all"
+                to="/tutor/classes" 
+                className="flex items-center justify-center gap-2 w-full bg-slate-50 text-slate-700 py-3 rounded-xl font-bold text-sm hover:bg-emerald-50 hover:text-emerald-700 transition-all border border-slate-200 hover:border-emerald-200"
               >
-                Cập nhật hồ sơ <ArrowRight className="w-4 h-4" />
+                Đến lớp học của tôi <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
