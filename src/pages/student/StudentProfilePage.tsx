@@ -11,6 +11,7 @@ interface ProfileData {
   lopHoc: string;
   truongHoc: string;
   hinhThucHocUuTien: string;
+  moTa: string;
 }
 
 export function StudentProfilePage() {
@@ -27,6 +28,7 @@ export function StudentProfilePage() {
     lopHoc: '',
     truongHoc: '',
     hinhThucHocUuTien: 'Hoc tai nha',
+    moTa: '',
   });
 
   useEffect(() => {
@@ -41,6 +43,7 @@ export function StudentProfilePage() {
           lopHoc: data.lopHoc || '',
           truongHoc: data.truongHoc || '',
           hinhThucHocUuTien: data.hinhThucHocUuTien || 'Hoc tai nha',
+          moTa: data.moTa || '',
         });
       } catch (err) {
         console.error('Loi khi tai ho so:', err);
@@ -70,6 +73,7 @@ export function StudentProfilePage() {
         lopHoc: result.lopHoc || '',
         truongHoc: result.truongHoc || '',
         hinhThucHocUuTien: result.hinhThucHocUuTien || 'Hoc tai nha',
+        moTa: result.moTa || '',
       });
       // Đồng bộ tên mới vào authStore (cập nhật sidebar/header)
       if (result.hoTen) updateUser({ name: result.hoTen });
@@ -129,16 +133,15 @@ export function StudentProfilePage() {
             <h2 className="text-xl font-bold text-slate-900 mb-1">{formData.hoTen || user?.name}</h2>
             <p className="text-blue-600 font-bold text-sm uppercase tracking-widest mb-4">Hoc vien</p>
 
-            <div className="flex items-center justify-center gap-4 py-4 border-t border-slate-50">
-              <div className="text-center">
-                <p className="text-xl font-black text-slate-900">0</p>
-                <p className="text-[10px] font-bold text-slate-400 uppercase">Lop hoc</p>
-              </div>
-              <div className="w-px h-8 bg-slate-100"></div>
-              <div className="text-center">
-                <p className="text-xl font-black text-slate-900">0</p>
-                <p className="text-[10px] font-bold text-slate-400 uppercase">Gia su</p>
-              </div>
+            <div className="py-4 border-t border-slate-50 px-6 text-left">
+              <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Bạn đang nghĩ gì?</p>
+              <textarea 
+                placeholder="Hôm nay bạn muốn học gì thế..." 
+                className="w-full text-sm text-slate-600 bg-slate-50 border border-slate-100 rounded-xl p-3 resize-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none hover:bg-white transition-all shadow-inner" 
+                rows={3}
+                value={formData.moTa}
+                onChange={(e) => setFormData({ ...formData, moTa: e.target.value })}
+              ></textarea>
             </div>
           </div>
 
