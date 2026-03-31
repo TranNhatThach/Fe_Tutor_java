@@ -4,45 +4,69 @@ import { BookOpen, Clock, Calendar, Star, ArrowRight, TrendingUp } from 'lucide-
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { useQueries } from '@tanstack/react-query';
+import { apiClient } from '../../api/client';
 
-// Helper tìm ngày học tiếp theo
-function getNextSession(lichHoc?: string): { date: Date; label: string; daysRemaining: number } | null {
-  if (!lichHoc) return null;
+// Helper tìm N ngày học tiếp theo của một lớp
+function getNextSessions(lichHoc?: string, limit: number = 3): { date: Date; label: string; daysRemaining: number }[] {
+  if (!lichHoc || lichHoc.trim() === '') {
+    return [{ date: new Date(), label: 'Chưa xếp lịch', daysRemaining: -1 }];
+  }
   const l = lichHoc.toLowerCase();
+  
+  const scheduleDays = new Set<number>();
+  
   const dayMatch = l.match(/thứ\s*(\d)|t(\d)/g);
-  const isWeekend = l.includes('cn') || l.includes('chủ nhật');
-  
-  if (!dayMatch && !isWeekend) return null;
-  
-  const scheduleDays: number[] = [];
   if (dayMatch) {
     dayMatch.forEach(m => {
-      const num = parseInt(m.match(/\d/)?.[0] || '0');
-      if (num >= 2 && num <= 7) scheduleDays.push(num);
+      const numMatch = m.match(/\d/);
+      if (numMatch) {
+        const num = parseInt(numMatch[0]);
+        if (num >= 2 && num <= 7) scheduleDays.add(num);
+      }
     });
   }
-  if (isWeekend) scheduleDays.push(1); // 1 = Sunday in our logic below
 
-  if (scheduleDays.length === 0) return null;
+  const numOnlyMatch = l.match(/(?<![a-zA-Z0-9])([2-7])(?![a-zA-Z0-9])/g);
+  if (numOnlyMatch) {
+    numOnlyMatch.forEach(m => {
+      scheduleDays.add(parseInt(m));
+    });
+  }
+  
+  if (l.includes('cn') || l.includes('chủ nhật')) {
+    scheduleDays.add(1); // Quy ước 1 = Chủ Nhật
+  }
 
-  const today = new Date();
-  const currentJsDay = today.getDay(); // 0 is Sunday
-  const currentSysDay = currentJsDay === 0 ? 1 : currentJsDay + 1; // 1: Sun, 2: Mon, ... 7: Sat
-
-  let minDiff = 7;
-  scheduleDays.forEach(d => {
-    let diff = d - currentSysDay;
-    if (diff < 0) diff += 7;
-    if (diff < minDiff) minDiff = diff;
-  });
-
-  const nextDate = new Date(today);
-  nextDate.setDate(today.getDate() + minDiff);
+  if (scheduleDays.size === 0) {
+    return [{ date: new Date(), label: lichHoc, daysRemaining: -1 }];
+  }
 
   const timeMatch = l.match(/(\d{1,2}(?::\d{2})?\s*(?:h|g)(?:iờ)?\s*(?:sáng|chiều|tối)?)/);
   const timeLabel = timeMatch ? timeMatch[1].trim() : '';
 
-  return { date: nextDate, label: timeLabel, daysRemaining: minDiff };
+  const today = new Date();
+  const sessions: { date: Date; label: string; daysRemaining: number }[] = [];
+  
+  for (let offset = 0; offset < 30; offset++) {
+    const testDate = new Date(today);
+    testDate.setDate(today.getDate() + offset);
+    
+    // JS getDay(): 0 = Sun, 1 = Mon...
+    const jsDay = testDate.getDay();
+    const sysDay = jsDay === 0 ? 1 : jsDay + 1; // 1 = Chủ Nhật, 2 = Thứ 2...
+    
+    if (scheduleDays.has(sysDay)) {
+      sessions.push({
+        date: testDate,
+        label: timeLabel || lichHoc,
+        daysRemaining: offset
+      });
+      if (sessions.length >= limit) break;
+    }
+  }
+
+  return sessions;
 }
 
 export function StudentDashboardPage() {
@@ -50,21 +74,45 @@ export function StudentDashboardPage() {
   const { getMyClasses } = useShared();
   const { data: classes } = getMyClasses();
 
+  const classIds = classes?.map(c => c.maLop) || [];
+  const buoiHocQueries = useQueries({
+    queries: classIds.map(id => ({
+      queryKey: ['buoi-hoc', id],
+      queryFn: () => apiClient<any[]>(`/buoi-hoc/lop/${id}`),
+      enabled: !!id,
+    }))
+  });
+
   let activeClasses = 0;
   let hoursStudied = 0;
   const upcoming: any[] = [];
 
-  classes?.forEach(cls => {
+  classes?.forEach((cls, idx) => {
     if (cls.trangThai !== 'HOAN_THANH') activeClasses++;
     
     const doneSessions = cls.tongSoBuoi != null ? (cls.tongSoBuoi - (cls.soBuoiConLai ?? cls.tongSoBuoi)) : 0;
-    hoursStudied += (doneSessions * 2);
-
-    if (cls.trangThai !== 'HOAN_THANH' && cls.lichHoc) {
-      const next = getNextSession(cls.lichHoc);
-      if (next) {
-        upcoming.push({ ...next, cls });
+    
+    const buoiHocs = buoiHocQueries[idx]?.data || [];
+    let sessionHours = 2; // mặc định 2 giờ nếu chưa có buổi học mẫu
+    if (buoiHocs.length > 0) {
+      const first = buoiHocs[0];
+      if (first.thoiGianBatDau && first.thoiGianKetThuc) {
+        const start = new Date(first.thoiGianBatDau).getTime();
+        const end = new Date(first.thoiGianKetThuc).getTime();
+        const hrs = (end - start) / (1000 * 60 * 60);
+        if (!isNaN(hrs) && hrs > 0) {
+          sessionHours = hrs;
+        }
       }
+    }
+    
+    hoursStudied += (doneSessions * sessionHours);
+
+    if (cls.trangThai !== 'HOAN_THANH') {
+      const nextList = getNextSessions(cls.lichHoc, 3);
+      nextList.forEach(next => {
+        upcoming.push({ ...next, cls });
+      });
     }
   });
 
@@ -135,8 +183,8 @@ export function StudentDashboardPage() {
                   <div key={idx} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between group">
                     <div className="flex items-center gap-6">
                       <div className="w-14 h-14 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors">
-                        <span className="text-xs font-black uppercase">{shortDay}</span>
-                        <span className="text-lg font-black leading-none">{dateStr.split('/')[0]}</span>
+                        <span className="text-xs font-black uppercase">{item.daysRemaining === -1 ? '--' : shortDay}</span>
+                        <span className="text-lg font-black leading-none">{item.daysRemaining === -1 ? '--' : dateStr.split('/')[0]}</span>
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-bold text-slate-900 truncate">{item.cls.tenMonHoc || 'Môn học'}</h3>
@@ -146,7 +194,7 @@ export function StudentDashboardPage() {
                     <div className="text-right">
                       <p className="font-bold text-slate-900">{item.label}</p>
                       <p className="text-xs text-emerald-600 font-bold uppercase tracking-widest mt-0.5">
-                        {item.daysRemaining === 0 ? 'HÔM NAY' : item.daysRemaining === 1 ? 'NGÀY MAI' : `+${item.daysRemaining} NGÀY`}
+                        {item.daysRemaining === -1 ? 'CHƯA RÕ' : item.daysRemaining === 0 ? 'HÔM NAY' : item.daysRemaining === 1 ? 'NGÀY MAI' : `+${item.daysRemaining} NGÀY`}
                       </p>
                     </div>
                   </div>

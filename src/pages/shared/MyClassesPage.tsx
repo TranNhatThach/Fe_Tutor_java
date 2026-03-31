@@ -92,6 +92,13 @@ function parseLichHoc(lich?: string) {
     if (new RegExp(`\\bt${d}\\b`).test(l)) days.add(d);
   });
 
+  const numOnlyMatch = l.match(/(?<![a-zA-Z0-9])([2-7])(?![a-zA-Z0-9])/g);
+  if (numOnlyMatch) {
+    numOnlyMatch.forEach(m => {
+      days.add(parseInt(m));
+    });
+  }
+
   // Chủ nhật
   if (l.includes('chủ nhật') || l.includes('chu nhat') || /\bcn\b/.test(l)) days.add(1);
 
@@ -430,7 +437,7 @@ function BuoiHocTab({ cls, isGiaSu }: { cls: Class; isGiaSu: boolean }) {
             <div className="grid grid-cols-7 gap-1.5">
               {[1,2,3,4,5,6,7].map(d => {
                 const isSession = sessionDays.includes(d);
-                const noMore = (cls.soBuoiConLai ?? 0) <= 0;
+                const noMore = cls.tongSoBuoi != null && (cls.soBuoiConLai ?? 0) <= 0;
                 const disabled = !isSession || noMore || hoanThanhBuoi.isPending;
                 const isToday = d === sysToday;
                 return (

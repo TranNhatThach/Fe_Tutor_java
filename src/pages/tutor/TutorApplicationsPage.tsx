@@ -6,6 +6,8 @@ import {
   Loader2, Send, BookOpen, Info, ChevronRight,
   DollarSign, Clock, MapPin, CheckCircle2, XCircle
 } from 'lucide-react';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client/dist/sockjs';
 
 interface YeuCau {
   maYeuCau: number;
@@ -30,10 +32,12 @@ interface UngTuyen {
 }
 
 interface ChatMessage {
-  id: number;
+  id: string;
   from: 'tutor' | 'student';
   text: string;
   time: string;
+  senderId?: number;
+  senderName?: string;
 }
 
 const nowTime = () =>
@@ -68,7 +72,7 @@ const statusLabel = (s: string) => {
 export function TutorApplicationsPage() {
   const { user } = useAuthStore();
   const [selected, setSelected] = useState<UngTuyen | null>(null);
-  const [chatRooms, setChatRooms] = useState<Record<number, ChatMessage[]>>({});
+  const [chatRooms, setChatRooms] = useState<Record<string, ChatMessage[]>>({});
   const [inputMsg, setInputMsg] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -76,7 +80,6 @@ export function TutorApplicationsPage() {
     queryKey: ['tutor-applications', user?.userId],
     queryFn: async () => {
       if (!user?.userId) return [];
-      // Gọi trực tiếp endpoint lấy danh sách đơn đã ứng tuyển theo mã gia sư
       const data = await apiClient<UngTuyen[]>(`/tuyen-dung/da-ung-tuyen/${user.userId}`);
       return data || [];
     },
@@ -88,21 +91,90 @@ export function TutorApplicationsPage() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [selected, chatRooms]);
 
+  // ─── Load lịch sử chat khi chọn đơn ứng tuyển ──────────────────────────────
+  useEffect(() => {
+    if (!selected) return;
+    const roomId = `${selected.yeuCauTimGiaSu.maYeuCau}_${selected.giaSu.maGiaSu}`;
+    // Chỉ load nếu chưa có trong cache
+    if (chatRooms[roomId] && chatRooms[roomId].length > 0) return;
+    
+    apiClient<ChatMessage[]>(`/chat/history/${roomId}`)
+      .then(messages => {
+        setChatRooms(prev => ({
+          ...prev,
+          [roomId]: messages || []
+        }));
+      })
+      .catch(err => console.error('Lỗi tải lịch sử chat:', err));
+  }, [selected]);
+
+  // ─── Kết nối WebSocket ─────────────────────────────────────────────────────
+  const stompClientRef = useRef<Client | null>(null);
+  const appIds = applications.map(app => `${app.yeuCauTimGiaSu.maYeuCau}_${app.giaSu.maGiaSu}`).join(',');
+
+  useEffect(() => {
+    if (!user || applications.length === 0) return;
+
+    const socketUrl = import.meta.env.VITE_API_URL 
+      ? import.meta.env.VITE_API_URL.replace('/api', '') + '/ws' 
+      : 'http://localhost:8080/ws';
+
+    const client = new Client({
+      webSocketFactory: () => new SockJS(socketUrl),
+      reconnectDelay: 5000,
+      heartbeatIncoming: 4000,
+      heartbeatOutgoing: 4000,
+      debug: (msg) => console.log('[STOMP Tutor] ', msg),
+      onConnect: () => {
+        // Đăng ký nhận tin nhắn từ tất cả phòng chat mà gia sư này đã ứng tuyển
+        applications.forEach(app => {
+          const roomId = `${app.yeuCauTimGiaSu.maYeuCau}_${app.giaSu.maGiaSu}`;
+          client.subscribe(`/topic/chat/${roomId}`, (payload) => {
+            const message = JSON.parse(payload.body) as ChatMessage;
+            setChatRooms(prev => {
+              const current = prev[roomId] || [];
+              if (current.some(m => m.id === message.id)) return prev;
+              return {
+                ...prev,
+                [roomId]: [...current, message]
+              };
+            });
+          });
+        });
+      },
+    });
+
+    client.activate();
+    stompClientRef.current = client;
+
+    return () => {
+      if (client.active) client.deactivate();
+    };
+  }, [appIds, user]);
+
   const sendMessage = () => {
-    if (!inputMsg.trim() || !selected) return;
+    if (!inputMsg.trim() || !selected || !stompClientRef.current?.active) return;
+    
     const key = selected.yeuCauTimGiaSu.maYeuCau;
-    const msg: ChatMessage = { id: Date.now(), from: 'tutor', text: inputMsg.trim(), time: nowTime() };
-    setChatRooms((p) => ({ ...p, [key]: [...(p[key] || []), msg] }));
+    const maGiaSu = selected.giaSu.maGiaSu;
+    const roomId = `${key}_${maGiaSu}`;
+
+    const msg: ChatMessage = {
+      id: `temp_${Date.now()}`,
+      from: 'tutor',
+      text: inputMsg.trim(),
+      time: nowTime(),
+      senderId: user?.userId,
+      senderName: user?.name,
+    };
+    
+    // Gửi tin nhắn qua STOMP (server sẽ lưu DB rồi broadcast lại)
+    stompClientRef.current.publish({
+      destination: `/app/chat/${roomId}`,
+      body: JSON.stringify(msg)
+    });
+
     setInputMsg('');
-    // Giả lập học viên phản hồi
-    setTimeout(() => {
-      const reply: ChatMessage = {
-        id: Date.now() + 1, from: 'student',
-        text: 'Cảm ơn bạn đã nhắn tin! Tôi sẽ xem xét và phản hồi sớm nhất.',
-        time: nowTime(),
-      };
-      setChatRooms((p) => ({ ...p, [key]: [...(p[key] || []), reply] }));
-    }, 900);
   };
 
   if (isLoading) {
@@ -114,7 +186,10 @@ export function TutorApplicationsPage() {
     );
   }
 
-  const messages = selected ? (chatRooms[selected.yeuCauTimGiaSu.maYeuCau] || []) : [];
+  const currentRoomId = selected
+    ? `${selected.yeuCauTimGiaSu.maYeuCau}_${selected.giaSu.maGiaSu}`
+    : null;
+  const messages = currentRoomId ? (chatRooms[currentRoomId] || []) : [];
 
   return (
     <div className="font-sans h-[calc(100vh-10rem)] flex flex-col">

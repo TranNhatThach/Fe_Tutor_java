@@ -11,6 +11,7 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@stomp/stompjs": "^7.3.0",
     "@tailwindcss/vite": "^4.1.14",
     "@tanstack/react-query": "^5.95.0",
     "@vitejs/plugin-react": "^5.0.4",
@@ -22,6 +23,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.14.2",
+    "sockjs-client": "^1.6.1",
     "tailwind-merge": "^3.5.0",
     "zustand": "^5.0.12"
   },

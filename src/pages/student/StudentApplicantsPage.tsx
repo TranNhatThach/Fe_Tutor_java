@@ -5,6 +5,8 @@ import {
   Loader2, CheckCircle2, XCircle, Clock, DollarSign,
   GraduationCap, Send, Info, ChevronRight, BookOpen, User
 } from 'lucide-react';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client/dist/sockjs';
 
 interface YeuCau {
   maYeuCau: number;
@@ -31,10 +33,12 @@ interface UngVien {
 }
 
 interface ChatMessage {
-  id: number;
+  id: string;
   from: 'student' | 'tutor';
   text: string;
   time: string;
+  senderId?: number;
+  senderName?: string;
 }
 
 // Tạo giờ hiện tại dạng HH:MM
@@ -50,7 +54,7 @@ export function StudentApplicantsPage() {
 
   // ─── State chat ─────────────────────────────────────────────────────────────
   const [selectedApplicant, setSelectedApplicant] = useState<(UngVien & { monHoc?: string }) | null>(null);
-  const [chatRooms, setChatRooms] = useState<Record<number, ChatMessage[]>>({});
+  const [chatRooms, setChatRooms] = useState<Record<string, ChatMessage[]>>({});
   const [inputMsg, setInputMsg] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -62,6 +66,68 @@ export function StudentApplicantsPage() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [selectedApplicant, chatRooms]);
+
+  // ─── Load lịch sử chat khi chọn ứng viên ──────────────────────────────────
+  useEffect(() => {
+    if (!selectedApplicant) return;
+    const roomId = `${selectedApplicant.yeuCauTimGiaSu.maYeuCau}_${selectedApplicant.giaSu.maGiaSu}`;
+    // Chỉ load nếu chưa có trong cache
+    if (chatRooms[roomId] && chatRooms[roomId].length > 0) return;
+    
+    apiClient<ChatMessage[]>(`/chat/history/${roomId}`)
+      .then(messages => {
+        setChatRooms(prev => ({
+          ...prev,
+          [roomId]: messages || []
+        }));
+      })
+      .catch(err => console.error('Lỗi tải lịch sử chat:', err));
+  }, [selectedApplicant]);
+
+  // ─── Kết nối WebSocket ─────────────────────────────────────────────────────
+  const stompClientRef = useRef<Client | null>(null);
+  const applicantIds = allApplicants.map(uv => `${uv.yeuCauTimGiaSu.maYeuCau}_${uv.giaSu.maGiaSu}`).join(',');
+
+  useEffect(() => {
+    if (!user || allApplicants.length === 0) return;
+
+    const socketUrl = import.meta.env.VITE_API_URL 
+      ? import.meta.env.VITE_API_URL.replace('/api', '') + '/ws' 
+      : 'http://localhost:8080/ws';
+
+    const client = new Client({
+      webSocketFactory: () => new SockJS(socketUrl),
+      reconnectDelay: 5000,
+      heartbeatIncoming: 4000,
+      heartbeatOutgoing: 4000,
+      debug: (msg) => console.log('[STOMP Student] ', msg),
+      onConnect: () => {
+        // Đăng ký nhận tin nhắn từ tất cả phòng chat của các ứng viên
+        allApplicants.forEach(uv => {
+          const roomId = `${uv.yeuCauTimGiaSu.maYeuCau}_${uv.giaSu.maGiaSu}`;
+          client.subscribe(`/topic/chat/${roomId}`, (payload) => {
+            const message = JSON.parse(payload.body) as ChatMessage;
+            setChatRooms(prev => {
+              const current = prev[roomId] || [];
+              // Tránh duplicate
+              if (current.some(m => m.id === message.id)) return prev;
+              return {
+                ...prev,
+                [roomId]: [...current, message]
+              };
+            });
+          });
+        });
+      },
+    });
+
+    client.activate();
+    stompClientRef.current = client;
+
+    return () => {
+      if (client.active) client.deactivate();
+    };
+  }, [applicantIds, user]);
 
   // Tải tất cả yêu cầu của học viên rồi fetch ứng viên từng yêu cầu
   const fetchAll = async () => {
@@ -126,33 +192,28 @@ export function StudentApplicantsPage() {
   };
 
   const sendMessage = () => {
-    if (!inputMsg.trim() || !selectedApplicant) return;
+    if (!inputMsg.trim() || !selectedApplicant || !stompClientRef.current?.active) return;
+    
     const maGiaSu = selectedApplicant.giaSu.maGiaSu;
+    const maYeuCau = selectedApplicant.yeuCauTimGiaSu.maYeuCau;
+    const roomId = `${maYeuCau}_${maGiaSu}`;
+
     const newMsg: ChatMessage = {
-      id: Date.now(),
+      id: `temp_${Date.now()}`,
       from: 'student',
       text: inputMsg.trim(),
       time: nowTime(),
+      senderId: user?.userId,
+      senderName: user?.name,
     };
-    setChatRooms((prev) => ({
-      ...prev,
-      [maGiaSu]: [...(prev[maGiaSu] || []), newMsg],
-    }));
-    setInputMsg('');
 
-    // Giả lập gia sư trả lời sau 1s
-    setTimeout(() => {
-      const reply: ChatMessage = {
-        id: Date.now() + 1,
-        from: 'tutor',
-        text: `Cảm ơn bạn đã nhắn tin! Tôi sẽ liên hệ lại sớm nhất có thể.`,
-        time: nowTime(),
-      };
-      setChatRooms((prev) => ({
-        ...prev,
-        [maGiaSu]: [...(prev[maGiaSu] || []), reply],
-      }));
-    }, 1000);
+    // Gửi tin nhắn lên WebSocket (server sẽ lưu DB rồi broadcast lại)
+    stompClientRef.current.publish({
+      destination: `/app/chat/${roomId}`,
+      body: JSON.stringify(newMsg)
+    });
+    
+    setInputMsg('');
   };
 
   const statusBadge = (s: string) => {
@@ -168,7 +229,6 @@ export function StudentApplicantsPage() {
     }
     return 'bg-slate-100 text-slate-500 border border-slate-200';
   };
-  // Sửa lại hàm isPending ở bên dưới (search: isPending)
 
   if (isLoading) {
     return (
@@ -179,7 +239,10 @@ export function StudentApplicantsPage() {
     );
   }
 
-  const messages = selectedApplicant ? (chatRooms[selectedApplicant.giaSu.maGiaSu] || []) : [];
+  const currentRoomId = selectedApplicant 
+    ? `${selectedApplicant.yeuCauTimGiaSu.maYeuCau}_${selectedApplicant.giaSu.maGiaSu}` 
+    : null;
+  const messages = currentRoomId ? (chatRooms[currentRoomId] || []) : [];
 
   return (
     <div className="font-sans h-[calc(100vh-10rem)] flex flex-col">
@@ -212,7 +275,6 @@ export function StudentApplicantsPage() {
                   const approveKey = `approve-${uv.giaSu.maGiaSu}`;
                   const rejectKey = `reject-${uv.giaSu.maGiaSu}`;
                   
-                  // Logic nhận diện trạng thái chờ duyệt (đồng bộ với tiếng Việt chuẩn)
                   const status = (uv.trangThai || '').trim().toUpperCase();
                   const isPending = status === 'CHỜ HỌC VIÊN XÁC NHẬN' || 
                                     status === 'CHỜ DUYỆT' || 
