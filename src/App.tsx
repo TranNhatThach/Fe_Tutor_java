@@ -22,6 +22,7 @@ import { StudentRequestPage } from './pages/student/StudentRequestPage';
 import UsersPage from './pages/UsersPage';
 import NotFoundPage from './pages/error/NotFoundPage';
 import ServerErrorPage from './pages/error/ServerErrorPage';
+import { AIAssistant } from './components/AIAssistant';
 
 
 
@@ -76,6 +77,9 @@ export default function App() {
           <Route path="/500" element={<ServerErrorPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
+        
+        {/* Global Chat components */}
+        <AIAssistant />
       </BrowserRouter>
     </QueryClientProvider>
   );
