@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, Users, Star, CheckCircle, ArrowRight } from "lucide-react";
+import { BookOpen, Users, Star, CheckCircle, ArrowRight, Search, MessageSquare, Monitor, Map, Compass, Target, Rocket } from "lucide-react";
 import { motion } from "motion/react";
 
 export default function LandingPage() {
@@ -32,10 +32,10 @@ export default function LandingPage() {
                 Cách hoạt động
               </a>
               <a
-                href="#tutors"
+                href="#roadmap"
                 className="hover:text-emerald-600 transition-colors"
               >
-                Gia sư
+                Lộ trình
               </a>
             </div>
             <div className="flex items-center gap-4">
@@ -140,8 +140,67 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* How it Works Section */}
+      <section id="how-it-works" className="py-24 px-4 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+              Cách hoạt động
+            </h2>
+            <p className="text-slate-600 max-w-2xl mx-auto">
+              Chỉ với vài bước đơn giản để bạn có thể bắt đầu hành trình học tập hiệu quả.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-12">
+            {[
+              { icon: Search, title: "Tìm gia sư", desc: "Dễ dàng tìm kiếm gia sư phù hợp với nhu cầu và môn học của bạn." },
+              { icon: MessageSquare, title: "Trao đổi", desc: "Kết nối trực tiếp để thống nhất lộ trình và thời gian học tập." },
+              { icon: Monitor, title: "Bắt đầu học", desc: "Tham gia lớp học trực tuyến và tiến bộ nhanh chóng mỗi ngày." }
+            ].map((step, idx) => (
+              <div key={idx} className="text-center group">
+                <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                  <step.icon className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-3">{step.title}</h3>
+                <p className="text-slate-600 text-sm">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Learning Roadmap Section */}
+      <section id="roadmap" className="py-24 px-4 bg-slate-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+              Lộ trình học tập chuyên sâu
+            </h2>
+            <p className="text-slate-600 max-w-2xl mx-auto">
+              Chúng tôi xây dựng lộ trình cá nhân hóa giúp bạn đạt được mục tiêu học tập nhanh nhất.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              { icon: Compass, title: "Xác định mục tiêu", desc: "Đánh giá năng lực đầu vào và đặt ra mục tiêu học tập rõ ràng." },
+              { icon: Map, title: "Lên kế hoạch", desc: "Xây dựng lịch trình học tập linh hoạt, phù hợp với thời gian biểu." },
+              { icon: Target, title: "Tập trung thực hành", desc: "Học đi đôi với hành thông qua các bài tập và dự án thực tế." },
+              { icon: Rocket, title: "Bứt phá kết quả", desc: "Kiểm tra định kỳ và tinh chỉnh lộ trình để đạt kết quả tối ưu." }
+            ].map((item, idx) => (
+              <div key={idx} className="p-8 bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-6">
+                  <item.icon className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-3">{item.title}</h3>
+                <p className="text-slate-500 text-sm leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
-      <section id="features" className="py-24 px-4">
+      <section id="features" className="py-24 px-4 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
@@ -223,10 +282,10 @@ export default function LandingPage() {
               </li>
               <li>
                 <a
-                  href="#"
+                  href="#roadmap"
                   className="hover:text-emerald-400 transition-colors"
                 >
-                  Gia sư
+                  Lộ trình
                 </a>
               </li>
               <li>
