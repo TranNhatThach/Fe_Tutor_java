@@ -20,7 +20,7 @@ export function LoginPage() {
       } else if (user.role === "GIA_SU") {
         navigate("/tutor/dashboard");
       } else if (user.role === "ADMIN") {
-        navigate("/users");
+        navigate("/dashboard");
       }
     }
   }, [user, token, navigate]);
@@ -37,11 +37,11 @@ export function LoginPage() {
           id: "admin",
           email: ADMIN_EMAIL,
           name: "Admin",
-          role: "ADMIN", // ✅ Khớp với type Role
+          role: "ADMIN",
         },
         "admin-local-token",
       );
-      navigate("/users");
+      navigate("/dashboard");
       return;
     }
     try {
@@ -50,7 +50,7 @@ export function LoginPage() {
       if (!data || !data.token) {
         alert(
           "Lỗi đăng nhập: " +
-            (data?.message || "Dữ liệu trả về từ server không hợp lệ."),
+          (data?.message || "Dữ liệu trả về từ server không hợp lệ."),
         );
         return;
       }
@@ -61,14 +61,14 @@ export function LoginPage() {
       } else if (role === "GIA_SU") {
         navigate("/tutor/dashboard");
       } else if (role === "ADMIN") {
-        navigate("/users");
+        navigate("/dashboard");
       } else {
         navigate("/");
       }
     } catch (err: any) {
       alert(
         err.message ||
-          "Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.",
+        "Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.",
       );
     }
   };

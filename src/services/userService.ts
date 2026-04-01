@@ -54,12 +54,43 @@ const userService = {
 
 
   /**
-   * Delete a user
+   * Delete a user (Soft Delete)
    */
   deleteUser: async (id: string | number): Promise<void> => {
     return apiClient(`/users/${id}`, { method: 'DELETE' });
   },
 
+  /**
+   * Fetch deleted users
+   */
+  getDeletedUsers: async (): Promise<User[]> => {
+    const data = await apiClient('/users/deleted');
+    return Array.isArray(data) ? data.map((item: any) => ({
+      id: item.maTaiKhoan,
+      username: item.email || '',
+      fullName: item.hoTen || 'Chưa cập nhật',
+      email: item.email,
+      role: item.vaiTro || 'USER',
+      phoneNumber: item.soDienThoai,
+      isActive: item.trangThai === 'HOAT_DONG',
+      createdAt: item.ngayTao,
+      isDelete: item.isDelete === 1
+    })) : [];
+  },
+
+  /**
+   * Restore a user
+   */
+  restoreUser: async (id: string | number): Promise<void> => {
+    return apiClient(`/users/${id}/restore`, { method: 'POST' });
+  },
+
+  /**
+   * Permanent delete
+   */
+  permanentDeleteUser: async (id: string | number): Promise<void> => {
+    return apiClient(`/users/${id}/permanent`, { method: 'DELETE' });
+  }
 };
 
 export default userService;

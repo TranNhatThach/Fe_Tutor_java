@@ -15,6 +15,7 @@ export interface User {
   avatar?: string;
   phoneNumber?: string;
   isActive: boolean;
+  isDelete?: boolean;
   createdAt?: string;
 }
 

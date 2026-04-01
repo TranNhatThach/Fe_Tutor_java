@@ -23,6 +23,9 @@ import UsersPage from './pages/UsersPage';
 import NotFoundPage from './pages/error/NotFoundPage';
 import ServerErrorPage from './pages/error/ServerErrorPage';
 import { AIAssistant } from './components/AIAssistant';
+import DeletedUsersPage from './pages/DeletedUsersPage';
+import ClassesManagementPage from './pages/ClassesManagementPage';
+import DashBoardPage from './pages/DashBoardPage';
 
 
 
@@ -44,7 +47,13 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/users" element={<UsersPage />} />
+          {/* Admin Routes */}
+          <Route element={<PrivateRoute allowedRole="ADMIN" />}>
+            <Route path="/dashboard" element={<DashBoardPage />} />
+            <Route path="/users" element={<UsersPage />} />
+            <Route path="/users/deleted" element={<DeletedUsersPage />} />
+            <Route path="/admin/classes" element={<ClassesManagementPage />} />
+          </Route>
 
           {/* Student Routes */}
           <Route path="/student" element={<PrivateRoute allowedRole="HOC_VIEN" />}>
