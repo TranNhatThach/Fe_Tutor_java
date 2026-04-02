@@ -81,6 +81,22 @@ export function StudentRequestPage() {
       setErrorMsg('Vui lòng nhập môn học.');
       return;
     }
+    const min = form.nganSachMin ? parseInt(form.nganSachMin) : null;
+    const max = form.nganSachMax ? parseInt(form.nganSachMax) : null;
+
+    if (min !== null && min < 0) {
+      setErrorMsg('Ngân sách không thể là số âm.');
+      return;
+    }
+    if (max !== null && max < 0) {
+      setErrorMsg('Ngân sách không thể là số âm.');
+      return;
+    }
+    if (min !== null && max !== null && min > max) {
+      setErrorMsg('Ngân sách tối đa phải lớn hơn hoặc bằng ngân sách tối thiểu.');
+      return;
+    }
+
     setIsSubmitting(true);
     setSuccessMsg('');
     setErrorMsg('');
@@ -94,8 +110,8 @@ export function StudentRequestPage() {
           lichHocDuKien: form.lichHocDuKien,
           hinhThuc: form.hinhThuc,
           diaDiem: form.diaDiem,
-          nganSachMin: form.nganSachMin ? parseInt(form.nganSachMin) : null,
-          nganSachMax: form.nganSachMax ? parseInt(form.nganSachMax) : null,
+          nganSachMin: min,
+          nganSachMax: max,
           moTa: form.moTa,
         }),
       });
@@ -390,10 +406,23 @@ export function StudentRequestPage() {
                             <Calendar className="w-3 h-3" /> {yc.lichHocDuKien}
                           </span>
                         )}
-                        {(yc.nganSachMin || yc.nganSachMax) && (
+                        {(yc.nganSachMin != null || yc.nganSachMax != null) && (
                           <span className="flex items-center gap-1 text-emerald-600 font-bold">
                             <DollarSign className="w-3 h-3" />
-                            {yc.nganSachMin?.toLocaleString() || '?'}đ – {yc.nganSachMax?.toLocaleString() || '?'}đ/giờ
+                            {(() => {
+                              const min = yc.nganSachMin;
+                              const max = yc.nganSachMax;
+                              if (min != null && max != null) {
+                                const trueMin = Math.min(min, max);
+                                const trueMax = Math.max(min, max);
+                                return `${trueMin.toLocaleString()}đ – ${trueMax.toLocaleString()}đ/giờ`;
+                              } else if (min != null) {
+                                return `Từ ${min.toLocaleString()}đ/giờ`;
+                              } else if (max != null) {
+                                return `Đến ${max.toLocaleString()}đ/giờ`;
+                              }
+                              return '?/giờ';
+                            })()}
                           </span>
                         )}
                       </div>

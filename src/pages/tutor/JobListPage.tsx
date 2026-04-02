@@ -93,10 +93,23 @@ export function JobListPage() {
                       {job.lichHocDuKien}
                     </div>
                   )}
-                  {(job.nganSachMin || job.nganSachMax) ? (
+                  {(job.nganSachMin != null || job.nganSachMax != null) ? (
                     <div className="flex items-center text-emerald-600 font-bold bg-emerald-50/50 px-3 py-1 rounded-xl">
                       <DollarSign className="w-4 h-4 mr-1" />
-                      {job.nganSachMin?.toLocaleString() || '?'}đ – {job.nganSachMax?.toLocaleString() || '?'}đ / giờ
+                      {(() => {
+                        const min = job.nganSachMin;
+                        const max = job.nganSachMax;
+                        if (min != null && max != null) {
+                          const trueMin = Math.min(min, max);
+                          const trueMax = Math.max(min, max);
+                          return `${trueMin.toLocaleString()}đ – ${trueMax.toLocaleString()}đ / giờ`;
+                        } else if (min != null) {
+                          return `Từ ${min.toLocaleString()}đ / giờ`;
+                        } else if (max != null) {
+                          return `Đến ${max.toLocaleString()}đ / giờ`;
+                        }
+                        return '? / giờ';
+                      })()}
                     </div>
                   ) : (
                     <div className="flex items-center text-emerald-600 font-bold bg-emerald-50/50 px-3 py-1 rounded-xl">

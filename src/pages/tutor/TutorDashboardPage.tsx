@@ -99,13 +99,15 @@ export function TutorDashboardPage() {
     const buoiHocs = buoiHocQueries[idx]?.data || [];
     let sessionHours = 2; // mặc định 2 giờ nếu chưa có buổi học mẫu
     if (buoiHocs.length > 0) {
-      const first = buoiHocs[0];
-      if (first.thoiGianBatDau && first.thoiGianKetThuc) {
-        const start = new Date(first.thoiGianBatDau).getTime();
-        const end = new Date(first.thoiGianKetThuc).getTime();
-        const hrs = (end - start) / (1000 * 60 * 60);
-        if (!isNaN(hrs) && hrs > 0) {
-          sessionHours = hrs;
+      for (const b of buoiHocs) {
+        if (b.thoiGianBatDau && b.thoiGianKetThuc) {
+          const start = new Date(b.thoiGianBatDau).getTime();
+          const end = new Date(b.thoiGianKetThuc).getTime();
+          const hrs = (end - start) / (1000 * 60 * 60);
+          if (!isNaN(hrs) && hrs > 0 && hrs <= 10) {
+            sessionHours = hrs;
+            break;
+          }
         }
       }
     }
@@ -134,7 +136,7 @@ export function TutorDashboardPage() {
 
   const stats = [
     { label: 'Lớp đang dạy', value: activeClasses.toString(), icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { label: 'Giờ đã dạy', value: `${hoursTaught}h`, icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'Giờ đã dạy', value: `${Number.isInteger(hoursTaught) ? hoursTaught : hoursTaught.toFixed(1)}h`, icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50' },
     { label: 'Thu nhập dự kiến', value: estimatedIncome >= 1000000 ? `${(estimatedIncome / 1000000).toFixed(1)}M` : `${(estimatedIncome / 1000)}k`, icon: DollarSign, color: 'text-amber-600', bg: 'bg-amber-50' },
     { label: 'Lời mời mới', value: newInvitations.toString(), icon: Mail, color: 'text-purple-600', bg: 'bg-purple-50' },
   ];
