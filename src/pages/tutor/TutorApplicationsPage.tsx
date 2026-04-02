@@ -20,7 +20,7 @@ interface YeuCau {
   diaDiem?: string;
   hocVien?: {
     maHocVien: number;
-    taiKhoan: { hoTen: string; email: string };
+    taiKhoan: { hoTen: string; email: string; avatar?: string };
   };
 }
 
@@ -425,9 +425,13 @@ export function TutorApplicationsPage() {
                     >
                       <div className="flex items-start gap-3">
                         <div className="relative shrink-0">
-                          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-bold text-lg shadow-sm">
-                            {hocVienName[0].toUpperCase()}
-                          </div>
+                          {yc.hocVien?.taiKhoan?.avatar ? (
+                            <img src={yc.hocVien.taiKhoan.avatar} alt={hocVienName} className="w-11 h-11 rounded-2xl object-cover shadow-sm bg-slate-100" />
+                          ) : (
+                            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                              {hocVienName[0].toUpperCase()}
+                            </div>
+                          )}
                           {hasUnread && !isSelected && (
                             <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 border-2 border-white rounded-full flex items-center justify-center text-white text-[9px] font-bold px-1 shadow-md animate-bounce">
                               {unreadCount > 9 ? '9+' : unreadCount}
@@ -491,9 +495,13 @@ export function TutorApplicationsPage() {
               {/* Header */}
               <div className="px-5 py-3.5 border-b border-slate-100/80 flex items-center gap-3 bg-gradient-to-r from-white to-emerald-50/30 shrink-0">
                 <div className="relative">
-                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-blue-200/50">
-                    {(selected.yeuCauTimGiaSu.hocVien?.taiKhoan?.hoTen || 'H')[0].toUpperCase()}
-                  </div>
+                  {selected.yeuCauTimGiaSu.hocVien?.taiKhoan?.avatar ? (
+                    <img src={selected.yeuCauTimGiaSu.hocVien.taiKhoan.avatar} alt={selected.yeuCauTimGiaSu.hocVien?.taiKhoan?.hoTen} className="w-11 h-11 rounded-2xl object-cover shadow-md shadow-blue-200/50 bg-slate-100" />
+                  ) : (
+                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-blue-200/50">
+                      {(selected.yeuCauTimGiaSu.hocVien?.taiKhoan?.hoTen || 'H')[0].toUpperCase()}
+                    </div>
+                  )}
                   <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-400 border-2 border-white rounded-full"></div>
                 </div>
                 <div className="flex-1 min-w-0">
@@ -552,14 +560,18 @@ export function TutorApplicationsPage() {
                   return (
                     <div key={msg.id || index} className={`flex gap-2.5 ${isMe ? 'flex-row-reverse' : 'flex-row'} ${showAvatar ? 'mt-4' : 'mt-0.5'}`}>
                       {showAvatar ? (
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm ${
-                          isMe
-                            ? 'bg-gradient-to-br from-emerald-500 to-teal-600'
-                            : 'bg-gradient-to-br from-blue-400 to-indigo-500'
-                        }`}>
-                          {isMe ? (user?.name?.[0] || 'T').toUpperCase()
-                                 : (selected.yeuCauTimGiaSu.hocVien?.taiKhoan?.hoTen?.[0] || 'H').toUpperCase()}
-                        </div>
+                        (isMe ? (user as any)?.avatar : selected.yeuCauTimGiaSu.hocVien?.taiKhoan?.avatar) ? (
+                            <img src={isMe ? (user as any)?.avatar : selected.yeuCauTimGiaSu.hocVien?.taiKhoan?.avatar} alt="avatar" className="w-8 h-8 rounded-xl object-cover shrink-0 shadow-sm bg-slate-50" />
+                        ) : (
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm ${
+                            isMe
+                              ? 'bg-gradient-to-br from-emerald-500 to-teal-600'
+                              : 'bg-gradient-to-br from-blue-400 to-indigo-500'
+                          }`}>
+                            {isMe ? (user?.name?.[0] || 'T').toUpperCase()
+                                   : (selected.yeuCauTimGiaSu.hocVien?.taiKhoan?.hoTen?.[0] || 'H').toUpperCase()}
+                          </div>
+                        )
                       ) : (
                         <div className="w-8 shrink-0" />
                       )}
