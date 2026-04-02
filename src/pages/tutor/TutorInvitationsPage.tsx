@@ -187,10 +187,23 @@ export function TutorInvitationsPage() {
                           <MapPin className="w-3 h-3" /> {yc.diaDiem}
                         </span>
                       )}
-                      {(yc.nganSachMin || yc.nganSachMax) && (
+                      {(yc.nganSachMin != null || yc.nganSachMax != null) && (
                         <span className="flex items-center gap-1 text-emerald-600 font-bold">
                           <DollarSign className="w-3 h-3" />
-                          {yc.nganSachMin?.toLocaleString() || '?'}đ – {yc.nganSachMax?.toLocaleString() || '?'}đ/giờ
+                          {(() => {
+                            const min = yc.nganSachMin;
+                            const max = yc.nganSachMax;
+                            if (min != null && max != null) {
+                              const trueMin = Math.min(min, max);
+                              const trueMax = Math.max(min, max);
+                              return `${trueMin.toLocaleString()}đ – ${trueMax.toLocaleString()}đ/giờ`;
+                            } else if (min != null) {
+                              return `Từ ${min.toLocaleString()}đ/giờ`;
+                            } else if (max != null) {
+                              return `Đến ${max.toLocaleString()}đ/giờ`;
+                            }
+                            return '?/giờ';
+                          })()}
                         </span>
                       )}
                     </div>

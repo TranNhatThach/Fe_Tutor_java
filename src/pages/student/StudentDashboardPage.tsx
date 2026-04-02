@@ -95,13 +95,15 @@ export function StudentDashboardPage() {
     const buoiHocs = buoiHocQueries[idx]?.data || [];
     let sessionHours = 2; // mặc định 2 giờ nếu chưa có buổi học mẫu
     if (buoiHocs.length > 0) {
-      const first = buoiHocs[0];
-      if (first.thoiGianBatDau && first.thoiGianKetThuc) {
-        const start = new Date(first.thoiGianBatDau).getTime();
-        const end = new Date(first.thoiGianKetThuc).getTime();
-        const hrs = (end - start) / (1000 * 60 * 60);
-        if (!isNaN(hrs) && hrs > 0) {
-          sessionHours = hrs;
+      for (const b of buoiHocs) {
+        if (b.thoiGianBatDau && b.thoiGianKetThuc) {
+          const start = new Date(b.thoiGianBatDau).getTime();
+          const end = new Date(b.thoiGianKetThuc).getTime();
+          const hrs = (end - start) / (1000 * 60 * 60);
+          if (!isNaN(hrs) && hrs > 0 && hrs <= 10) {
+            sessionHours = hrs;
+            break;
+          }
         }
       }
     }
@@ -124,7 +126,7 @@ export function StudentDashboardPage() {
 
   const stats = [
     { label: 'Lớp đang học', value: activeClasses.toString(), icon: BookOpen, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { label: 'Giờ đã học', value: `${hoursStudied}h`, icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'Giờ đã học', value: `${Number.isInteger(hoursStudied) ? hoursStudied : hoursStudied.toFixed(1)}h`, icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50' },
     { label: 'Buổi học tới', value: nextClasses.length > 0 ? (nextClasses[0].daysRemaining === 0 ? 'Hôm nay' : nextClasses[0].daysRemaining === 1 ? 'Ngày mai' : `+${nextClasses[0].daysRemaining} ngày`) : 'Chưa có', icon: Calendar, color: 'text-amber-600', bg: 'bg-amber-50' },
     { label: 'Gia sư theo học', value: totalTutors.toString(), icon: Star, color: 'text-purple-600', bg: 'bg-purple-50' },
   ];
