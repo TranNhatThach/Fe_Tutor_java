@@ -26,6 +26,8 @@ import { AIAssistant } from './components/AIAssistant';
 import DeletedUsersPage from './pages/DeletedUsersPage';
 import ClassesManagementPage from './pages/ClassesManagementPage';
 import DashBoardPage from './pages/DashBoardPage';
+import { OAuth2RedirectHandler } from './pages/auth/OAuth2RedirectHandler';
+import { SelectRolePage } from './pages/auth/SelectRolePage';
 
 
 
@@ -47,6 +49,8 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
+          <Route path="/oauth2/select-role" element={<SelectRolePage />} />
           {/* Admin Routes */}
           <Route element={<PrivateRoute allowedRole="ADMIN" />}>
             <Route path="/dashboard" element={<DashBoardPage />} />

@@ -90,21 +90,21 @@ export function LoginPage() {
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
 
       <div className="max-w-md w-full relative z-10">
-        <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/40 p-6 md:p-10 overflow-hidden transform transition-all hover:scale-[1.01]">
+        <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/40 p-6 md:p-8 overflow-hidden transform transition-all hover:scale-[1.01]">
           {/* Top Glow */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent opacity-50"></div>
 
           <div className="mb-10 text-center">
             <Link
               to="/"
-              className="inline-flex items-center text-sm font-medium text-slate-600 hover:text-emerald-600 transition-all mb-8 bg-white/50 px-4 py-2 rounded-full border border-slate-200/50 shadow-sm"
+              className="inline-flex items-center text-xs font-medium text-slate-600 hover:text-emerald-600 transition-all mb-4 bg-white/50 px-3 py-1.5 rounded-full border border-slate-200/50 shadow-sm"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" /> Quay lại trang chủ
+              <ArrowLeft className="w-3 h-3 mr-2" /> Quay lại trang chủ
             </Link>
 
-            <div className="flex flex-col items-center gap-4">
-              <div className="bg-gradient-to-br from-emerald-400 to-emerald-600 p-4 rounded-2xl shadow-xl shadow-emerald-500/20 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
-                <BookOpen className="text-white w-8 h-8" />
+            <div className="flex flex-col items-center gap-2">
+              <div className="bg-gradient-to-br from-emerald-400 to-emerald-600 p-2.5 rounded-xl shadow-xl shadow-emerald-500/20 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
+                <BookOpen className="text-white w-6 h-6" />
               </div>
               <div>
                 <h1 className="text-2xl font-black tracking-tight text-slate-900 bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700">
@@ -114,15 +114,12 @@ export function LoginPage() {
               </div>
             </div>
 
-            <div className="mt-6">
-              <h2 className="text-xl font-bold text-slate-800">Chào mừng trở lại!</h2>
-              <p className="text-slate-500 mt-1 font-medium text-sm">
-                Sẵn sàng để tiếp tục hành trình chinh phục tri thức?
-              </p>
+            <div className="mt-4">
+              <h2 className="text-lg font-bold text-slate-800">Chào mừng trở lại!</h2>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
             <div className="space-y-2">
               <label className="block text-sm font-bold text-slate-700 ml-1">
                 Email Address
@@ -202,7 +199,25 @@ export function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-10 pt-8 border-t border-slate-200/50 text-center">
+          {/* Social Login Divider */}
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200"></div>
+            </div>
+            <div className="relative flex justify-center text-[10px] uppercase tracking-widest">
+              <span className="px-2 bg-white text-slate-400 font-bold">Hoặc</span>
+            </div>
+          </div>
+
+          <button
+            onClick={() => window.location.href = "http://localhost:8080/oauth2/authorization/google"}
+            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-50 text-slate-700 py-3 rounded-2xl font-bold border border-slate-200 shadow-sm transition-all transform active:scale-[0.98]"
+          >
+            <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+            <span>Tiếp tục với Google</span>
+          </button>
+
+          <div className="mt-6 pt-6 border-t border-slate-200/50 text-center">
             <p className="text-slate-500 font-medium">
               Chưa có tài khoản?{" "}
               <Link
