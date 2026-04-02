@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { BookOpen, User, UserCheck, ArrowLeft, Loader2, Mail, Lock, Phone, MapPin, UserCircle } from "lucide-react";
 import { apiClient } from "../../api/client";
+import provincesData from "../../constants/provinces.json";
 import backgroundImage from "../../layouts/GộvsSus.png";
 
 export function RegisterPage() {
@@ -14,6 +15,24 @@ export function RegisterPage() {
   const [address, setAddress] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+
+  const [selectedProvince, setSelectedProvince] = useState('');
+  const [selectedDistrict, setSelectedDistrict] = useState('');
+
+  const currentProvinceData = provincesData.find((p: any) => p.name === selectedProvince);
+
+  const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const province = e.target.value;
+    setSelectedProvince(province);
+    setSelectedDistrict('');
+    setAddress(province);
+  };
+
+  const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const district = e.target.value;
+    setSelectedDistrict(district);
+    setAddress(district ? `${district}, ${selectedProvince}` : selectedProvince);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,18 +234,48 @@ export function RegisterPage() {
                       />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 ml-1">Địa chỉ</label>
-                    <div className="relative group">
-                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-                      <input
-                        type="text"
-                        required
-                        className="w-full pl-12 pr-4 py-3.5 bg-white/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium"
-                        placeholder="Thành phố, Quận/Huyện"
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                      />
+                  
+                  {/* Tỉnh/Thành & Quận/Huyện selection */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-slate-700 ml-1">Tỉnh / Thành</label>
+                      <div className="relative group">
+                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors z-10" />
+                        <select
+                          required
+                          className="w-full pl-12 pr-4 py-3.5 bg-white/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium appearance-none cursor-pointer"
+                          value={selectedProvince}
+                          onChange={handleProvinceChange}
+                        >
+                          <option value="">-- Tỉnh/Thành --</option>
+                          {provincesData.map((p: any) => (
+                            <option key={p.code} value={p.name}>{p.name}</option>
+                          ))}
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                          <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-slate-700 ml-1">Quận / Huyện</label>
+                      <div className="relative group">
+                        <select
+                          required
+                          className="w-full px-4 py-3.5 bg-white/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          value={selectedDistrict}
+                          onChange={handleDistrictChange}
+                          disabled={!selectedProvince}
+                        >
+                          <option value="">-- Quận/Huyện --</option>
+                          {currentProvinceData?.districts?.map((d: any) => (
+                            <option key={d.code} value={d.name}>{d.name}</option>
+                          ))}
+                        </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                          <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

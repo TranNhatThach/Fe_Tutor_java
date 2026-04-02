@@ -9,6 +9,7 @@ export function AIAssistant() {
   const [messages, setMessages] = useState<{ from: 'ai' | 'user', text: string }[]>([
     { from: 'ai', text: 'Chào ' + user?.name + '! Tôi là Trợ lý AI của TutorConnect. Bạn cần hỗ trợ gì về việc tìm gia sư hay chính sách học tập không?' }
   ]);
+
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -28,10 +29,14 @@ export function AIAssistant() {
 
     try {
       // Gọi API Proxy về Local Model
-      const res = await apiClient<{ answer: string }>('/ai/ask', {
+      const res = await apiClient<{ answer: string, context: number[] }>('/ai/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: userText })
+        body: JSON.stringify({ 
+          question: userText,
+          userName: user?.name,
+          userRole: user?.role
+        })
       });
 
       setMessages(prev => [...prev, { from: 'ai', text: res.answer }]);
@@ -48,7 +53,7 @@ export function AIAssistant() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-2xl hover:bg-indigo-700 hover:scale-110 active:scale-95 transition-all group border-2 border-white/20 animate-bounce"
+          className="w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-2xl hover:bg-indigo-700 hover:scale-110 active:scale-95  group border-2 border-white/20 animate-bounce"
           title="Hỏi trợ lý AI"
         >
           <Bot className="w-7 h-7" />
@@ -103,7 +108,7 @@ export function AIAssistant() {
             <div className="flex items-center gap-2 bg-slate-50 rounded-2xl px-3 py-1 border border-slate-200 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all">
               <input
                 type="text"
-                placeholder="Hỏi AI về gia sư..."
+                placeholder="Hỏi AI về tutorconnect..."
                 className="flex-1 bg-transparent py-2 outline-none text-sm text-slate-700 font-medium"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}

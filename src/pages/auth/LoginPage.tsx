@@ -89,8 +89,8 @@ export function LoginPage() {
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-500/20 rounded-full blur-[120px] animate-pulse"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
 
-      <div className="max-w-xl w-full relative z-10">
-        <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/40 p-8 md:p-12 overflow-hidden transform transition-all hover:scale-[1.01]">
+      <div className="max-w-md w-full relative z-10">
+        <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/40 p-6 md:p-10 overflow-hidden transform transition-all hover:scale-[1.01]">
           {/* Top Glow */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent opacity-50"></div>
 
@@ -107,22 +107,22 @@ export function LoginPage() {
                 <BookOpen className="text-white w-8 h-8" />
               </div>
               <div>
-                <h1 className="text-3xl font-black tracking-tight text-slate-900 bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700">
+                <h1 className="text-2xl font-black tracking-tight text-slate-900 bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700">
                   TutorConnect
                 </h1>
-                <div className="h-1 w-12 bg-emerald-500 rounded-full mx-auto mt-1"></div>
+                <div className="h-1 w-10 bg-emerald-500 rounded-full mx-auto mt-1"></div>
               </div>
             </div>
 
-            <div className="mt-8">
-              <h2 className="text-2xl font-bold text-slate-800">Chào mừng trở lại!</h2>
-              <p className="text-slate-500 mt-2 font-medium">
-                Sẵn sàng để tiếp tục hành trình chi phục tri thức?
+            <div className="mt-6">
+              <h2 className="text-xl font-bold text-slate-800">Chào mừng trở lại!</h2>
+              <p className="text-slate-500 mt-1 font-medium text-sm">
+                Sẵn sàng để tiếp tục hành trình chinh phục tri thức?
               </p>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label className="block text-sm font-bold text-slate-700 ml-1">
                 Email Address
@@ -134,7 +134,7 @@ export function LoginPage() {
                 <input
                   type="email"
                   required
-                  className="w-full pl-12 pr-4 py-4 bg-white/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-400 font-medium"
+                  className="w-full pl-12 pr-4 py-3 bg-white/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-400 font-medium text-sm"
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -161,7 +161,7 @@ export function LoginPage() {
                 <input
                   type="password"
                   required
-                  className="w-full pl-12 pr-4 py-4 bg-white/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-400"
+                  className="w-full pl-12 pr-4 py-3 bg-white/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-400 text-sm"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -189,7 +189,7 @@ export function LoginPage() {
             <button
               type="submit"
               disabled={login.isPending}
-              className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 rounded-2xl font-black text-lg hover:shadow-2xl hover:shadow-emerald-500/40 transform active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-70 group"
+              className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3.5 rounded-2xl font-black text-base hover:shadow-2xl hover:shadow-emerald-500/40 transform active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-70 group"
             >
               {login.isPending ? (
                 <Loader2 className="w-6 h-6 animate-spin" />
