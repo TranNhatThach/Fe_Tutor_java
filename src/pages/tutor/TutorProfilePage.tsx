@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { apiClient } from '../../api/client';
 import provincesData from '../../constants/provinces.json';
 import { User, Mail, Phone, MapPin, BookOpen, Award, Save, Loader2, Camera, GraduationCap, Briefcase, Plus, Trash2, Edit2, DollarSign, X } from 'lucide-react';
 import { useTutorSubjects } from '../../hooks/useTutorSubjects';
+import { uploadImageToImgBB } from '../../utils/imageUpload';
 
 interface TutorProfileData {
   hoTen: string;
@@ -18,6 +19,7 @@ interface TutorProfileData {
   diemDanhGia: number;
   soDanhGia: number;
   moTa: string;
+  avatar?: string;
 }
 
 export function TutorProfilePage() {
@@ -26,6 +28,8 @@ export function TutorProfilePage() {
   const [isFetching, setIsFetching] = useState(true);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [selectedProvince, setSelectedProvince] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('');
@@ -60,6 +64,7 @@ export function TutorProfilePage() {
     diemDanhGia: 0,
     soDanhGia: 0,
     moTa: '',
+    avatar: '',
   });
 
   const { getMySubjects, addSubject, removeSubject } = useTutorSubjects();
@@ -99,6 +104,23 @@ export function TutorProfilePage() {
     }
   };
 
+  const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploading(true);
+      const url = await uploadImageToImgBB(file);
+      setFormData(prev => ({ ...prev, avatar: url }));
+      setSuccessMsg('Tải ảnh lên thành công. Đừng quên bấm "Lưu thay đổi"');
+      // Optional: Update in authStore immediately if you want, but wait for Save is better.
+    } catch (err) {
+      setErrorMsg('Tải ảnh thất bại. Vui lòng thử lại.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -124,6 +146,7 @@ export function TutorProfilePage() {
           diemDanhGia: data.diemDanhGia || 0,
           soDanhGia: data.soDanhGia || 0,
           moTa: data.moTa || '',
+          avatar: data.avatar || '',
         });
       } catch (err) {
         console.error('Lỗi khi tải hồ sơ:', err);
@@ -151,7 +174,10 @@ export function TutorProfilePage() {
       });
       setSuccessMsg('Cập nhật hồ sơ thành công!');
       // Đồng bộ tên mới vào authStore (cập nhật sidebar/header)
-      if (payload.hoTen) updateUser({ name: payload.hoTen });
+      updateUser({ 
+        name: payload.hoTen || user?.name, 
+        avatar: payload.avatar !== undefined ? payload.avatar : user?.avatar 
+      });
     } catch (err: any) {
       setErrorMsg('Lỗi: ' + (err.message || 'Không thể cập nhật hồ sơ.'));
     } finally {
@@ -194,14 +220,25 @@ export function TutorProfilePage() {
             <div className="relative inline-block mb-4">
               <div className="w-32 h-32 rounded-3xl bg-white shadow-xl border-4 border-white overflow-hidden mx-auto">
                 <img
-                  src={`https://picsum.photos/seed/${user?.id}/200/200`}
+                  src={formData.avatar || `https://picsum.photos/seed/${user?.id}/200/200`}
                   alt={user?.name}
-                  className="w-full h-full object-cover"
+                  className={`w-full h-full object-cover ${isUploading ? 'opacity-50' : ''}`}
                   referrerPolicy="no-referrer"
                 />
               </div>
-              <button className="absolute bottom-0 right-0 bg-emerald-600 text-white p-2.5 rounded-xl shadow-lg hover:bg-emerald-700 transition-all">
-                <Camera className="w-4 h-4" />
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleAvatarSelect}
+                accept="image/*"
+                className="hidden"
+              />
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="absolute bottom-0 right-0 bg-emerald-600 text-white p-2.5 rounded-xl shadow-lg hover:bg-emerald-700 transition-all disabled:opacity-50"
+              >
+                {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
               </button>
             </div>
             <h2 className="text-xl font-bold text-slate-900 mb-1">{formData.hoTen || user?.name}</h2>

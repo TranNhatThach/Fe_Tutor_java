@@ -10,6 +10,7 @@ interface LoginResponse {
   token: string;
   email?: string; 
   userId?: number;
+  avatar?: string;
 }
 
 
@@ -33,7 +34,8 @@ export function useAuth() {
           email: data.email || variables.email,
           name: data.username,
           role: data.role,
-          userId: data.userId
+          userId: data.userId,
+          avatar: data.avatar
         }, data.token);
       }
     },
