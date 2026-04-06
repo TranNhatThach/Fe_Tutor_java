@@ -14,6 +14,7 @@ export function RegisterPage() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [emailError, setEmailError] = useState("");
   const navigate = useNavigate();
 
   const [selectedProvince, setSelectedProvince] = useState('');
@@ -34,8 +35,26 @@ export function RegisterPage() {
     setAddress(district ? `${district}, ${selectedProvince}` : selectedProvince);
   };
 
+  const validateEmail = (value: string) => {
+    if (value && !value.toLowerCase().endsWith("@gmail.com")) {
+      setEmailError("Email phải có định dạng @gmail.com");
+    } else {
+      setEmailError("");
+    }
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEmail(value);
+    validateEmail(value);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email.toLowerCase().endsWith("@gmail.com")) {
+      setEmailError("Email phải có định dạng @gmail.com");
+      return;
+    }
     if (password !== confirmPassword) {
       alert("Mật khẩu xác nhận không khớp!");
       return;
@@ -175,16 +194,28 @@ export function RegisterPage() {
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-700 ml-1">Email</label>
                     <div className="relative group">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                      <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${emailError ? 'text-red-400' : 'text-slate-400 group-focus-within:text-emerald-500'}`} />
                       <input
                         type="email"
                         required
-                        className="w-full pl-12 pr-4 py-3.5 bg-white/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium"
-                        placeholder="name@example.com"
+                        className={`w-full pl-12 pr-4 py-3.5 bg-white/50 border rounded-2xl focus:ring-4 outline-none transition-all font-medium ${
+                          emailError
+                            ? 'border-red-400 focus:ring-red-500/10 focus:border-red-500'
+                            : 'border-slate-200 focus:ring-emerald-500/10 focus:border-emerald-500'
+                        }`}
+                        placeholder="name@gmail.com"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={handleEmailChange}
                       />
                     </div>
+                    {emailError && (
+                      <p className="text-xs text-red-500 font-medium ml-1 flex items-center gap-1 animate-pulse">
+                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        {emailError}
+                      </p>
+                    )}
                   </div>
                 </div>
 

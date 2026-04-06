@@ -52,6 +52,16 @@ export function SelectRolePage() {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 font-sans text-slate-900">
       <div className="max-w-2xl w-full">
         <div className="text-center mb-10">
+          {avatar && (
+            <div className="flex justify-center mb-4">
+              <img 
+                src={avatar} 
+                alt="Avatar" 
+                className="w-20 h-20 rounded-full border-4 border-white shadow-lg object-cover"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          )}
           <h1 className="text-3xl font-black text-slate-900 mb-2">Bạn tham gia với vai trò nào?</h1>
           <p className="text-slate-500 font-medium">Chào mừng {name}! Vui lòng chọn vai trò để tiếp tục.</p>
         </div>
